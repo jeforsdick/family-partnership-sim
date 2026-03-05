@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Elementary Family Partnership Meeting Simulator</title>
+
   <style>
     :root{
       --bg:#0b1020;
@@ -14,6 +15,8 @@
       --shadow: rgba(0,0,0,0.35);
       --btn:#1a2550;
       --btn2:#1e2b5f;
+      --accent:#7aa7ff;
+      --warn:#ffcc66;
     }
     html,body{height:100%;}
     body{
@@ -40,8 +43,10 @@
       color: var(--muted);
       user-select:none;
     }
+
     .board{ display:grid; grid-template-columns: 1.2fr 0.8fr; gap: 16px; }
     @media (max-width: 880px){ .board{grid-template-columns: 1fr;} }
+
     .card{
       background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
       border: 1px solid var(--border);
@@ -60,8 +65,10 @@
     }
     .card .hd strong{ font-size: 14px; letter-spacing:0.2px; }
     .card .bd{ padding: 16px; }
+
     .scene{ font-size: 16px; margin: 0 0 10px; }
     .sub{ color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+
     .choices{ display:flex; flex-direction:column; gap:10px; margin-top: 10px; }
     button.choice{
       text-align:left;
@@ -92,6 +99,7 @@
     }
 
     .sidebar .bd{ display:flex; flex-direction:column; gap:12px; }
+
     .meter{ display:grid; gap:6px; }
     .meter .row{ display:flex; justify-content:space-between; align-items:center; font-size: 12px; color: var(--muted); }
     .bar{
@@ -105,6 +113,7 @@
       border-radius: 999px;
       background: linear-gradient(90deg, rgba(122,167,255,0.85), rgba(51,209,122,0.75));
     }
+
     .note{
       background: rgba(255,255,255,0.03);
       border: 1px solid var(--border);
@@ -113,6 +122,7 @@
       color: var(--muted);
       font-size: 13px;
     }
+
     .btnrow{ display:flex; gap:10px; flex-wrap:wrap; margin-top: 8px; }
     .btn{
       background: rgba(255,255,255,0.05);
@@ -166,8 +176,61 @@
       resize:vertical;
     }
     .hint{ font-size: 12px; color: var(--muted); margin-top: 8px; }
-    .warn{ color: #ffcc66; }
+    .warn{ color: var(--warn); }
 
+    /* Final Review */
+    .review{
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,0.18);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .review h2{
+      margin: 0 0 8px;
+      font-size: 16px;
+      letter-spacing: 0.2px;
+    }
+    .review p{ margin: 0 0 10px; color: var(--muted); font-size: 13px; }
+    .transcript{
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,0.20);
+      border-radius: 12px;
+      padding: 12px;
+      max-height: 420px;
+      overflow:auto;
+      white-space: pre-wrap;
+      font-size: 13px;
+      color: var(--text);
+    }
+    .suggestions{
+      margin-top: 10px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+      border-radius: 12px;
+      padding: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .suggestions ul{ margin: 8px 0 0 18px; }
+    .fieldrow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      margin-top: 10px;
+    }
+    input[type="email"]{
+      flex: 1 1 260px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,0.20);
+      color: var(--text);
+      padding: 10px 12px;
+      font-size: 13px;
+    }
+    .smallmuted{ color: var(--muted); font-size: 12px; margin-top: 8px; }
+
+    /* Modal */
     .modal{
       position:fixed;
       inset:0;
@@ -188,7 +251,18 @@
       overflow:hidden;
     }
     .panel .bd{ padding: 16px; }
-    .smallmuted{ color: var(--muted); font-size: 12px; margin-top: 8px; }
+
+    /* Print to PDF styling */
+    @media print{
+      body{ background:#fff; color:#000; }
+      .topbar, .sidebar, #restartBtn, #openSummaryBtn, .footer, .btn, .pillrow { display:none !important; }
+      .board{ display:block; }
+      .card{ box-shadow:none; border: none; }
+      .card .hd{ border:none; }
+      .card .bd{ padding: 0; }
+      .transcript{ max-height:none; overflow:visible; border: none; background:#fff; color:#000; }
+      .review, .suggestions{ border:none; background:#fff; color:#000; }
+    }
   </style>
 </head>
 
@@ -198,13 +272,13 @@
       <div class="title">
         <h1>Elementary Family Partnership Meeting Simulator</h1>
         <p>
-          This simulation is for elementary pre-service teachers. You will practice strengths-based, culturally responsive partnering
-          across academics, routines, and belonging. You will make choices and also write a few short responses in your own words.
+          Practice strengths-based, culturally responsive partnering across academics, routines, and belonging.
+          You will make choices and write a few short responses in your own words.
         </p>
         <div class="pillrow">
           <div class="pill">Estimated time: 25 to 35 minutes</div>
           <div class="pill">10 moments + 3 short written responses</div>
-          <div class="pill">End product: copy session summary for your 1 page reflection</div>
+          <div class="pill">End: transcript review + PDF for Canvas</div>
         </div>
       </div>
       <div class="pillrow">
@@ -237,6 +311,32 @@
             <div class="hint warn" id="validationMsg" style="display:none;"></div>
           </div>
 
+          <!-- Final Review Panel -->
+          <div id="finalReview" class="review" style="display:none;">
+            <h2>Final Review: Read your transcript</h2>
+            <p>
+              This is your full conversation path (choices, your written responses, caregiver reactions, and coaching notes).
+              Read it once. Then download a PDF to submit in Canvas.
+            </p>
+
+            <div class="transcript" id="transcriptBox"></div>
+
+            <div class="suggestions" id="suggestionsBox"></div>
+
+            <div class="fieldrow">
+              <input id="emailField" type="email" placeholder="Optional: your email to send yourself a draft (opens your email app)" />
+              <button class="btn" id="emailBtn">Email me the results (opens draft)</button>
+            </div>
+            <div class="btnrow">
+              <button class="btn" id="downloadPdfBtn">Download PDF</button>
+              <button class="btn" id="copyTranscriptBtn">Copy transcript</button>
+              <button class="btn" id="copySummaryBtn">Copy summary</button>
+            </div>
+            <div class="smallmuted">
+              Note: This site does not send emails automatically. The email button opens a draft using your own email app.
+            </div>
+          </div>
+
           <div class="meta" id="metaRow" style="display:none;"></div>
         </div>
       </div>
@@ -247,24 +347,21 @@
           <span class="pill" id="timerPill">00:00</span>
         </div>
         <div class="bd">
-
           <div class="meter">
             <div class="row"><span>Trust</span><span id="trustVal">50</span></div>
             <div class="bar"><div class="fill" id="trustBar"></div></div>
           </div>
-
           <div class="meter">
             <div class="row"><span>Clarity</span><span id="clarityVal">50</span></div>
             <div class="bar"><div class="fill" id="clarityBar"></div></div>
           </div>
-
           <div class="meter">
             <div class="row"><span>Collaboration</span><span id="collabVal">50</span></div>
             <div class="bar"><div class="fill" id="collabBar"></div></div>
           </div>
 
           <div class="note" id="coachNote">
-            Choose a scenario to begin. Your goal is to learn from the family, define the concern clearly, and end with a feasible shared plan.
+            Choose a scenario to begin.
           </div>
 
           <div class="btnrow">
@@ -273,19 +370,19 @@
           </div>
 
           <div>
-            <div class="smallmuted">Conversation log</div>
+            <div class="smallmuted">Conversation log (short)</div>
             <div class="log" id="logBox">No actions yet.</div>
           </div>
 
           <div class="footer">
             Keyboard tip: press <span class="kbd">1</span>, <span class="kbd">2</span>, <span class="kbd">3</span> to choose an option when choices are shown.
           </div>
-
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Summary Modal (still available) -->
   <div class="modal" id="summaryModal" aria-hidden="true">
     <div class="panel">
       <div class="hd">
@@ -298,7 +395,7 @@
       <div class="bd">
         <textarea id="summaryText" readonly style="min-height:260px;"></textarea>
         <div class="smallmuted">
-          Paste this summary at the top of your 1 page reflection. Then respond to the prompts included.
+          Paste this summary at the top of your 1 page reflection.
         </div>
       </div>
     </div>
@@ -314,7 +411,6 @@
   };
   const fmtSigned = (n)=> (n>0 ? `+${n}` : String(n));
 
-  // Very simple “quality” checks so branching feels responsive
   function textScore(text){
     const t = (text || "").toLowerCase();
     const lengthOk = t.trim().length >= 40;
@@ -344,7 +440,8 @@
     timer: null,
     choicesLive: false,
     path: [],
-    typed: {} // stores typed responses
+    typed: {},
+    transcript: [] // richer transcript entries
   };
 
   const profiles = [
@@ -392,13 +489,11 @@
     }
   ];
 
-  // Scenes + inserted “typed response” moments at steps 2, 5, 9 (0-indexed: after step 1, after step 4, after step 8)
-  // We will interrupt the flow with a writing prompt.
   const scenes = [
     {
       title: "Moment 1: Opening the meeting",
       prompt: (p)=> `You are starting a short meeting with the caregiver for: ${p.name}. What do you say first?`,
-      sub: "Aim: set a respectful tone, begin with strengths, and invite partnership.",
+      sub: "Aim: set a respectful tone, begin with strengths, invite partnership.",
       choices: [
         { text: "Start with appreciation and strengths, and invite their perspective.", delta: {trust:+10, clarity:+4, collab:+8},
           reaction: "Caregiver relaxes a bit and shares a positive story.",
@@ -430,7 +525,7 @@
     {
       title: "Moment 3: Describe the concern (neutral and observable)",
       prompt: (p)=> "You describe what you are seeing at school. Which framing do you use?",
-      sub: "Aim: be specific, neutral, and observable, and avoid labels.",
+      sub: "Aim: be specific, neutral, observable. Avoid labels.",
       choices: [
         { text: (p)=> `Use observable language: “Here is what we notice: ${p.context.concernObs}”`, delta: {trust:+5, clarity:+12, collab:+5},
           reaction: "Caregiver nods and asks when it tends to happen.",
@@ -446,32 +541,32 @@
     {
       title: "Moment 4: Ask for home perspective (whole-child)",
       prompt: ()=> "Now you invite the caregiver perspective. Which question best supports partnership?",
-      sub: "Aim: learn about routines, motivation, culture, and what works at home.",
+      sub: "Aim: learn routines, motivation, culture, and what works at home.",
       choices: [
         { text: "Ask what they notice at home and what helps their child have a good day.", delta: {trust:+10, clarity:+4, collab:+10},
           reaction: "Caregiver shares helpful routines and a possible trigger.",
           coach: "This invites context and builds shared understanding." },
         { text: "Ask what consequences they use at home.", delta: {trust:-6, clarity:+3, collab:-6},
-          reaction: "Caregiver answers, but seems wary of being judged.",
-          coach: "Keep the focus on supports and what works, not consequences." },
+          reaction: "Caregiver answers, but seems wary.",
+          coach: "Keep the focus on supports and what works." },
         { text: "Ask them to reinforce what school does.", delta: {trust:-8, clarity:+2, collab:-10},
-          reaction: "Caregiver looks stressed and says they are not sure.",
-          coach: "Partnership means co-creating something feasible, not assigning tasks." }
+          reaction: "Caregiver looks stressed and unsure.",
+          coach: "Partnership means co-creating something feasible." }
       ]
     },
     {
       title: "Moment 5: Reduce barriers and improve access",
       prompt: ()=> "You want communication to be respectful and accessible. What do you propose?",
-      sub: "Aim: confirm preferred method, language access, and feasible timing.",
+      sub: "Aim: confirm preferred method, language access, feasible timing.",
       choices: [
         { text: "Ask about preferred communication method, timing, and language access; offer flexibility.", delta: {trust:+10, clarity:+6, collab:+10},
           reaction: "Caregiver shares preferences and feels respected.",
           coach: "This reduces barriers and shows flexibility." },
         { text: "Default to weekly emails.", delta: {trust:-4, clarity:+3, collab:-6},
-          reaction: "Caregiver says email is hard to keep up with.",
+          reaction: "Caregiver says email is hard.",
           coach: "Offer options and confirm what works." },
         { text: "Insist in-person is best each time.", delta: {trust:-3, clarity:+2, collab:-4},
-          reaction: "Caregiver seems unsure about scheduling barriers.",
+          reaction: "Caregiver worries about barriers.",
           coach: "Ask and problem-solve together instead." }
       ]
     },
@@ -482,58 +577,58 @@
       choices: [
         { text: "Invite the family to choose one goal for the next two weeks.", delta: {trust:+8, clarity:+6, collab:+14},
           reaction: "Caregiver names a priority and asks what school can do.",
-          coach: "Shared decision-making increases buy-in and feasibility." },
+          coach: "Shared decision-making increases buy-in." },
         { text: "Set a vague goal like improve and do better.", delta: {trust:-2, clarity:-10, collab:-4},
           reaction: "Caregiver asks what improve means.",
           coach: "Goals should be observable and concrete." },
         { text: "Use technical language and percentages.", delta: {trust:-6, clarity:-4, collab:-6},
-          reaction: "Caregiver looks confused and stops asking questions.",
+          reaction: "Caregiver looks confused.",
           coach: "Keep family-facing goals in plain language." }
       ]
     },
     {
       title: "Moment 7: Build a plan with options (school and home)",
       prompt: (p)=> "Time to co-create strategies. Which approach best supports partnership?",
-      sub: "Aim: offer options, check feasibility, align routines across home and school.",
+      sub: "Aim: offer options, check feasibility, align routines.",
       choices: [
         { text: (p)=> `Offer two school options and ask what feels doable at home.\nSchool option A: ${p.context.schoolOptions[0]}\nSchool option B: ${p.context.schoolOptions[1]}`,
           delta: {trust:+8, clarity:+8, collab:+12},
           reaction: "Caregiver picks an option and suggests a small home routine that fits their schedule.",
           coach: "Choices plus feasibility checks support follow-through." },
         { text: "Assign a home plan the family should do nightly.", delta: {trust:-12, clarity:+2, collab:-14},
-          reaction: "Caregiver says they cannot do that and feels blamed.",
+          reaction: "Caregiver feels blamed and says they cannot do that.",
           coach: "Avoid prescribing. Co-create something that matches context." },
         { text: "Keep it only at school and exclude the family.", delta: {trust:+1, clarity:+2, collab:-6},
-          reaction: "Caregiver is relieved but unsure how to support consistency.",
+          reaction: "Caregiver is relieved but unsure about consistency.",
           coach: "Offer an optional tiny home step informed by the family." }
       ]
     },
     {
       title: "Moment 8: Whole-child check",
       prompt: ()=> "Before finalizing, you do a quick whole-child check. What do you say?",
-      sub: "Aim: include learning, routine, and relationship/communication support.",
+      sub: "Aim: include learning, routine, relationship/communication support.",
       choices: [
-        { text: "Ask to ensure the plan includes learning support, routine support, and relationship/communication support.", delta: {trust:+8, clarity:+10, collab:+12},
+        { text: "Ensure the plan includes learning support, routine support, and relationship/communication support.", delta: {trust:+8, clarity:+10, collab:+12},
           reaction: "Caregiver adds one key detail that improves the plan.",
           coach: "This keeps the plan balanced and partnership-centered." },
-        { text: "Say you already have enough and skip the check.", delta: {trust:-4, clarity:-2, collab:-6},
+        { text: "Skip the check because you already have enough.", delta: {trust:-4, clarity:-2, collab:-6},
           reaction: "Caregiver agrees but looks uncertain.",
-          coach: "A quick check can prevent gaps without adding much burden." },
+          coach: "A quick check can prevent gaps." },
         { text: "Skip family involvement because it is mostly school-based.", delta: {trust:-2, clarity:-2, collab:-8},
-          reaction: "Caregiver feels less included in the solution.",
+          reaction: "Caregiver feels less included.",
           coach: "Even a small family-informed step increases shared ownership." }
       ]
     },
     {
       title: "Moment 9: Monitor progress without intimidation",
       prompt: ()=> "You want a simple way to monitor progress and communicate. What do you propose?",
-      sub: "Aim: simple, non-punitive, predictable, aligned with family preference.",
+      sub: "Aim: simple, non-punitive, predictable, aligned with preference.",
       choices: [
-        { text: "Propose a weekly check-in with one number and one note, plus one positive highlight.", delta: {trust:+8, clarity:+10, collab:+8},
+        { text: "Weekly check-in with one number and one note, plus one positive highlight.", delta: {trust:+8, clarity:+10, collab:+8},
           reaction: "Caregiver agrees and asks what the number represents.",
           coach: "Simple data and predictable communication supports trust." },
         { text: "Send lots of data and graphs.", delta: {trust:-2, clarity:+3, collab:-2},
-          reaction: "Caregiver looks overwhelmed by graphs.",
+          reaction: "Caregiver looks overwhelmed.",
           coach: "Start simple and ask what families prefer." },
         { text: "Only contact the caregiver when things go badly.", delta: {trust:-10, clarity:-2, collab:-10},
           reaction: "Caregiver worries they will only hear negative news.",
@@ -545,39 +640,29 @@
       prompt: ()=> "You close the meeting and send a follow-up message. Which version do you choose?",
       sub: "Aim: strengths-based summary, plain language, roles, next steps, appreciation.",
       choices: [
-        { text: "Send a strengths-based summary with what you will do, what the family will try (if doable), and a check-in time.", delta: {trust:+10, clarity:+12, collab:+10},
+        { text: "Send a strengths-based summary with roles, next steps, and a check-in time.", delta: {trust:+10, clarity:+12, collab:+10},
           reaction: "Caregiver replies with appreciation and one clarification.",
           coach: "This reinforces shared ownership and keeps the plan alive." },
         { text: "Send a jargon-filled recap with acronyms.", delta: {trust:-6, clarity:-8, collab:-6},
           reaction: "Caregiver does not respond.",
-          coach: "Jargon creates distance. Keep it concrete." },
+          coach: "Jargon creates distance." },
         { text: "Send a warning-style message to remind the child to do better.", delta: {trust:-14, clarity:-4, collab:-14},
-          reaction: "Caregiver feels blamed and stops responding.",
+          reaction: "Caregiver feels blamed and disengages.",
           coach: "Avoid blame. Focus on shared supports and next steps." }
       ]
     }
   ];
 
-  // Typed prompts appear after certain steps
   const typedPrompts = {
-    2: { // after Moment 2
-      key: "openingScript",
-      title: "Quick write: Your opening script",
-      label: "Write what you would say in the first 30 seconds of the meeting.",
-      hint: "Include: one strength + one invitation to share the family perspective. Plain language."
-    },
-    5: { // after Moment 5
-      key: "homePerspectiveQuestion",
-      title: "Quick write: Your best partnering question",
-      label: "Write one question you would ask to learn the caregiver’s perspective and priorities.",
-      hint: "Include: a genuine question that invites context and preferences. Avoid blame."
-    },
-    9: { // after Moment 9
-      key: "followUpMessage",
-      title: "Quick write: Family-facing follow-up message",
-      label: "Draft a short follow-up message (text/email style) summarizing the plan and next steps.",
-      hint: "Include: appreciation + plan summary + check-in time/method + invitation to adjust."
-    }
+    2: { key:"openingScript", title:"Quick write: Your opening script",
+      label:"Write what you would say in the first 30 seconds of the meeting.",
+      hint:"Include: one strength + one invitation to share the family perspective. Plain language." },
+    5: { key:"homePerspectiveQuestion", title:"Quick write: Your best partnering question",
+      label:"Write one question you would ask to learn the caregiver’s perspective and priorities.",
+      hint:"Include: a genuine question that invites context and preferences. Avoid blame." },
+    9: { key:"followUpMessage", title:"Quick write: Family-facing follow-up message",
+      label:"Draft a short follow-up message summarizing the plan and next steps.",
+      hint:"Include: appreciation + plan summary + check-in time/method + invitation to adjust." }
   };
 
   // DOM
@@ -585,7 +670,6 @@
   const elProgress = document.getElementById("progressPill");
   const elSceneText = document.getElementById("sceneText");
   const elSceneSub = document.getElementById("sceneSub");
-
   const elProfileChoices = document.getElementById("profileChoices");
   const elGameChoices = document.getElementById("gameChoices");
   const elMetaRow = document.getElementById("metaRow");
@@ -612,10 +696,17 @@
   const elSkipText = document.getElementById("skipTextBtn");
   const elValidationMsg = document.getElementById("validationMsg");
 
+  const elFinalReview = document.getElementById("finalReview");
+  const elTranscriptBox = document.getElementById("transcriptBox");
+  const elSuggestionsBox = document.getElementById("suggestionsBox");
+  const elEmailField = document.getElementById("emailField");
+  const elEmailBtn = document.getElementById("emailBtn");
+  const elDownloadPdfBtn = document.getElementById("downloadPdfBtn");
+  const elCopyTranscriptBtn = document.getElementById("copyTranscriptBtn");
+  const elCopySummaryBtn = document.getElementById("copySummaryBtn");
+
   const elModal = document.getElementById("summaryModal");
   const elSummaryText = document.getElementById("summaryText");
-  const elCopy = document.getElementById("copyBtn");
-  const elCloseModal = document.getElementById("closeModalBtn");
 
   function updateMeters(){
     elTrustVal.textContent = state.trust;
@@ -656,6 +747,7 @@
     state.choicesLive = false;
     state.path = [];
     state.typed = {};
+    state.transcript = [];
 
     elOpenSummary.disabled = true;
     elTimer.textContent = "00:00";
@@ -664,6 +756,7 @@
     renderStart();
     elLog.textContent = "No actions yet.";
     hideInputPanel();
+    hideFinalReview();
   }
 
   function renderStart(){
@@ -676,6 +769,8 @@
     elMetaRow.style.display = "none";
     elProfileChoices.style.display = "flex";
     elProfileChoices.innerHTML = "";
+    hideInputPanel();
+    hideFinalReview();
 
     profiles.forEach(p=>{
       const b = document.createElement("button");
@@ -730,8 +825,10 @@
     elInputPanel.style.display = "block";
     elGameChoices.style.display = "none";
     elProfileChoices.style.display = "none";
+    elFinalReview.style.display = "none";
 
     elCardTitle.textContent = tp.title;
+    elProgress.textContent = `${state.step + 1} of ${state.maxSteps}`;
     elSceneText.textContent = "";
     elSceneSub.textContent = "";
 
@@ -740,62 +837,85 @@
     elFreeText.value = state.typed[tp.key] || "";
     elValidationMsg.style.display = "none";
   }
-
   function hideInputPanel(){
     elInputPanel.style.display = "none";
     elFreeText.value = "";
     elValidationMsg.style.display = "none";
   }
 
-  function applyTextBranching(tpKey, text){
-    const {score, flags} = textScore(text);
+  function showFinalReview(){
+    elFinalReview.style.display = "block";
+    elGameChoices.style.display = "none";
+    elProfileChoices.style.display = "none";
+    elMetaRow.style.display = "none";
+    hideInputPanel();
 
-    // Small, transparent adjustments
+    const transcript = buildTranscriptText();
+    elTranscriptBox.textContent = transcript;
+
+    elSuggestionsBox.innerHTML = buildSuggestionsHtml();
+
+    elCoachNote.textContent = "Read your transcript and use the buttons to download a PDF or submit your summary.";
+  }
+  function hideFinalReview(){
+    elFinalReview.style.display = "none";
+  }
+
+  function applyTextBranching(tpKey, text){
+    const p = currentProfile();
+    const {score} = textScore(text);
+
+    let reaction = "";
+    let coach = "";
+
     if(score >= 4){
       state.trust = clamp(state.trust + 4, 0, 100);
       state.collab = clamp(state.collab + 4, 0, 100);
       state.clarity = clamp(state.clarity + 2, 0, 100);
-      logLine("Your response included key partnering elements. Caregiver engagement increases.");
-      elCoachNote.textContent = "Nice. You used strengths and partnership language in plain language.";
+      reaction = "Caregiver engagement increases. They respond with more detail and openness.";
+      coach = "Strong partnering. You used strengths, a real question, and shared decision-making in plain language.";
     } else if(score >= 2){
       state.trust = clamp(state.trust + 1, 0, 100);
       state.clarity = clamp(state.clarity + 1, 0, 100);
-      logLine("Your response is a start. Some partnering elements are missing.");
-      elCoachNote.textContent = "Good start. Next time, add a clear strength, a genuine question, and a shared next step.";
+      reaction = "Caregiver responds, but stays somewhat cautious.";
+      coach = "Good start. Next time add: one clear strength + one genuine question + one shared next step.";
     } else {
       state.trust = clamp(state.trust - 3, 0, 100);
       state.collab = clamp(state.collab - 3, 0, 100);
-      logLine("Your response may feel unclear or not very collaborative. Caregiver engagement decreases.");
-      elCoachNote.textContent = "This may land as unclear or not collaborative. Add strengths, a question, and shared decision-making.";
+      reaction = "Caregiver engagement drops. They give shorter answers and seem unsure.";
+      coach = "This may land as unclear or not collaborative. Add strengths, a question, and partnership language.";
     }
 
-    // Special: if multilingual scenario and they mention language/translation, boost trust
-    const p = currentProfile();
     if(p.id === "C"){
       const t = (text || "").toLowerCase();
       if(/spanish|translate|interpreter|language/.test(t)){
         state.trust = clamp(state.trust + 3, 0, 100);
-        logLine("You addressed language access. Trust increases.");
+        reaction += " You also addressed language access, which improves trust.";
       }
     }
 
     updateMeters();
-    state.path.push({
-      moment: `WRITE: ${tpKey}`,
-      title: "Written response",
-      option: "",
-      delta: {trust:0, clarity:0, collab:0},
-      text: text.trim()
+
+    state.transcript.push({
+      type: "write",
+      label: tpKey,
+      teacher: text.trim(),
+      caregiver: reaction,
+      coach
     });
+
+    logLine("Written response submitted.");
+    logLine(`Coaching note: ${coach}`);
+    elCoachNote.textContent = coach;
   }
 
   function renderStep(){
     const profile = currentProfile();
     renderMeta(profile);
 
+    hideFinalReview();
     hideInputPanel();
 
-    // If this step has a typed prompt, show it instead of choices
     const tp = typedPrompts[state.step];
     if(tp){
       showInputPanel(tp);
@@ -839,12 +959,12 @@
 
     const chosenText = getChoiceText(c, profile);
 
-    state.path.push({
-      moment: state.step+1,
+    state.transcript.push({
+      type: "choice",
       title: scene.title,
-      option: idx+1,
-      delta: c.delta,
-      text: chosenText
+      teacher: chosenText,
+      caregiver: c.reaction,
+      coach: c.coach
     });
 
     logLine(`Moment ${state.step+1}: Option ${idx+1} selected.`);
@@ -863,28 +983,22 @@
     }, 650);
   }
 
-  // Typed response submit
+  // Typed submit
   elSubmitText.addEventListener("click", ()=>{
     const tp = typedPrompts[state.step];
     if(!tp) return;
-
     const txt = (elFreeText.value || "").trim();
-    const {score, flags} = textScore(txt);
 
-    // Light validation: encourage, but don’t hard-block unless empty
     if(txt.length < 10){
       elValidationMsg.style.display = "block";
       elValidationMsg.textContent = "Please write at least a couple of sentences before submitting.";
       return;
     }
+    elValidationMsg.style.display = "none";
 
     state.typed[tp.key] = txt;
-    logLine(`Written response saved: ${tp.key}`);
-
-    // Branching feedback and small score adjustments
     applyTextBranching(tp.key, txt);
 
-    // Move forward
     state.step += 1;
     renderStep();
   });
@@ -892,11 +1006,20 @@
   elSkipText.addEventListener("click", ()=>{
     const tp = typedPrompts[state.step];
     if(!tp) return;
+
     state.typed[tp.key] = "[Skipped]";
-    logLine(`Written response skipped: ${tp.key}`);
-    // Small penalty to discourage skipping
     state.collab = clamp(state.collab - 2, 0, 100);
     updateMeters();
+
+    state.transcript.push({
+      type:"write",
+      label: tp.key,
+      teacher: "[Skipped]",
+      caregiver: "Caregiver gets a brief response and stays unsure about the plan.",
+      coach: "Skipping reduces clarity and collaboration. In real meetings, a short, plain-language message helps maintain partnership."
+    });
+
+    logLine("Written response skipped.");
     state.step += 1;
     renderStep();
   });
@@ -909,14 +1032,65 @@
     return "Low trust meeting, high risk of disengagement";
   }
 
-  function suggestNextSteps(){
+  function suggestList(){
     const items = [];
-    if(state.trust < 60) items.push("- Repair and reconnect: open next contact with appreciation, validation, and a clear invitation for caregiver priorities.");
-    if(state.clarity < 60) items.push("- Increase clarity: summarize the plan in plain language, confirm roles, and define what success looks like in observable terms.");
-    if(state.collab < 60) items.push("- Increase collaboration: offer choices, ask what feels doable, and co-create one small family-informed step.");
-    items.push("- Confirm communication preferences (method, timing, language) and schedule the next check-in before ending.");
-    items.push("- Share at least one positive highlight each week to avoid problem-only contact.");
-    return items.join("\n");
+    if(state.trust < 60){
+      items.push("Start next contact with appreciation and validation, then invite the caregiver’s priorities.");
+      items.push("Avoid urgency or blame language. Use neutral, observable examples.");
+    }
+    if(state.clarity < 60){
+      items.push("Summarize the plan in 3 parts: what school will do, what family might try (if doable), and when you will check in.");
+      items.push("Use plain language and define what success looks like in observable terms.");
+    }
+    if(state.collab < 60){
+      items.push("Offer two options and ask which fits best.");
+      items.push("Ask “What feels doable for your family right now?” before finalizing anything.");
+    }
+    items.push("Confirm communication method, timing, and language needs before ending.");
+    items.push("Build in at least one positive highlight each week.");
+    return items;
+  }
+
+  function buildSuggestionsHtml(){
+    const items = suggestList();
+    return `
+      <strong>Suggestions for improving your next meeting</strong>
+      <ul>${items.map(i=>`<li>${escapeHtml(i)}</li>`).join("")}</ul>
+    `;
+  }
+
+  function buildTranscriptText(){
+    const p = currentProfile();
+    const header = [
+      `SCENARIO: ${p.name} (Scenario ${p.id})`,
+      `RESULTS: Trust ${state.trust} | Clarity ${state.clarity} | Collaboration ${state.collab}`,
+      `OUTCOME: ${outcomeLabel()}`,
+      "",
+      "TRANSCRIPT",
+      "---------"
+    ].join("\n");
+
+    const blocks = state.transcript.map((t, i)=>{
+      const n = i + 1;
+      if(t.type === "choice"){
+        return [
+          `${n}. ${t.title}`,
+          `Teacher: ${t.teacher}`,
+          `Caregiver: ${t.caregiver}`,
+          `Coach: ${t.coach}`,
+          ""
+        ].join("\n");
+      }
+      return [
+        `${n}. Written response (${t.label})`,
+        `Teacher: ${t.teacher}`,
+        `Caregiver: ${t.caregiver}`,
+        `Coach: ${t.coach}`,
+        ""
+      ].join("\n");
+    }).join("\n");
+
+    return `${header}\n\n${blocks}`;
   }
 
   function buildSessionSummary(){
@@ -924,24 +1098,6 @@
     const mins = Math.max(1, Math.round(state.seconds/60));
     const strengths = p.strengths.map(s=>`- ${s}`).join("\n");
     const needs = p.familyNeeds.map(s=>`- ${s}`).join("\n");
-
-    const path = state.path.map(item=>{
-      if(String(item.moment).startsWith("WRITE:")){
-        return [
-          `${item.moment}`,
-          `Your response: ${item.text}`,
-          ""
-        ].join("\n");
-      }
-      return [
-        `Moment ${item.moment}: ${item.title}`,
-        `Chosen option: ${item.option}`,
-        `Impact: Trust ${fmtSigned(item.delta.trust)}, Clarity ${fmtSigned(item.delta.clarity)}, Collaboration ${fmtSigned(item.delta.collab)}`,
-        `Choice summary: ${item.text}`,
-        ""
-      ].join("\n");
-    }).join("\n").trim();
-
     const planIdeas = [
       "Possible goal and strategy ideas (from this scenario)",
       "Shared goal examples",
@@ -977,19 +1133,13 @@
       `Collaboration: ${state.collab}`,
       `Overall meeting outcome: ${outcomeLabel()}`,
       "",
-      "Your path through the meeting (including your written responses)",
-      path,
-      "",
       planIdeas,
       "",
-      "Suggested next steps you could take in the real world",
-      suggestNextSteps(),
-      "",
       "Reflection prompts (write 1 page total)",
-      "1) What did you do that supported trust and collaboration? Use at least two specific moments from your log.",
-      "2) Where did you use strengths-based and culturally responsive partnering? Quote one sentence you wrote or would say.",
-      "3) What would you change next time to improve one area (trust, clarity, or collaboration)? Be specific.",
-      "4) What is one concrete follow-up action you would take this week to maintain the partnership (method, timing, and content)?",
+      "1) What did you do that supported trust and collaboration? Use at least two specific moments from your transcript.",
+      "2) Quote one sentence you wrote or would say that shows strengths-based partnering.",
+      "3) What would you change next time to improve one area (trust, clarity, or collaboration)?",
+      "4) What is one concrete follow-up action you would take this week (method, timing, and content)?",
       ""
     ].join("\n");
   }
@@ -1001,19 +1151,58 @@
     elCardTitle.textContent = "Complete";
     elProgress.textContent = `${state.maxSteps} of ${state.maxSteps}`;
     elSceneText.textContent = `Simulation complete. Outcome: ${outcomeLabel()}.`;
-    elSceneSub.textContent = "Click “View summary” to copy your session summary for your reflection.";
+    elSceneSub.textContent = "Review your full transcript below, then download a PDF for Canvas.";
 
     elGameChoices.style.display = "none";
     elMetaRow.style.display = "none";
     hideInputPanel();
-    elCoachNote.textContent = "Nice work. Your summary includes your choices, your written responses, and reflection prompts.";
 
     logLine("Simulation complete.");
     logLine(`Outcome: ${outcomeLabel()}`);
+
     elOpenSummary.disabled = false;
+    showFinalReview();
   }
 
-  // Modal
+  // Email draft (mailto)
+  elEmailBtn.addEventListener("click", ()=>{
+    const email = (elEmailField.value || "").trim();
+    const subject = encodeURIComponent("Family Partnership Simulator Results");
+    const body = encodeURIComponent(buildSessionSummary() + "\n\n" + buildTranscriptText());
+    // If they leave email blank, still open mail app for them to choose recipient
+    const to = encodeURIComponent(email);
+    const href = `mailto:${to}?subject=${subject}&body=${body}`;
+    window.location.href = href;
+  });
+
+  // Download PDF: uses print dialog with print-specific CSS
+  elDownloadPdfBtn.addEventListener("click", ()=>{
+    window.print();
+  });
+
+  // Copy transcript and summary
+  elCopyTranscriptBtn.addEventListener("click", async ()=>{
+    try{
+      await navigator.clipboard.writeText(buildTranscriptText());
+      elCopyTranscriptBtn.textContent = "Transcript copied";
+      setTimeout(()=> elCopyTranscriptBtn.textContent = "Copy transcript", 900);
+    } catch(e){
+      elCopyTranscriptBtn.textContent = "Copy failed";
+      setTimeout(()=> elCopyTranscriptBtn.textContent = "Copy transcript", 1200);
+    }
+  });
+  elCopySummaryBtn.addEventListener("click", async ()=>{
+    try{
+      await navigator.clipboard.writeText(buildSessionSummary());
+      elCopySummaryBtn.textContent = "Summary copied";
+      setTimeout(()=> elCopySummaryBtn.textContent = "Copy summary", 900);
+    } catch(e){
+      elCopySummaryBtn.textContent = "Copy failed";
+      setTimeout(()=> elCopySummaryBtn.textContent = "Copy summary", 1200);
+    }
+  });
+
+  // Summary modal (optional)
   function openSummary(){
     elSummaryText.value = buildSessionSummary();
     elModal.classList.add("open");
@@ -1023,6 +1212,21 @@
     elModal.classList.remove("open");
     elModal.setAttribute("aria-hidden","true");
   }
+  document.getElementById("openSummaryBtn").addEventListener("click", openSummary);
+  document.getElementById("closeModalBtn").addEventListener("click", closeSummary);
+  document.getElementById("summaryModal").addEventListener("click", (e)=>{ if(e.target.id==="summaryModal") closeSummary(); });
+  document.getElementById("copyBtn").addEventListener("click", async ()=>{
+    try{
+      await navigator.clipboard.writeText(elSummaryText.value);
+      const b = document.getElementById("copyBtn");
+      b.textContent = "Copied";
+      setTimeout(()=> b.textContent = "Copy session summary", 900);
+    } catch(e){
+      const b = document.getElementById("copyBtn");
+      b.textContent = "Copy failed";
+      setTimeout(()=> b.textContent = "Copy session summary", 1200);
+    }
+  });
 
   // Keyboard shortcuts for choice screens only
   window.addEventListener("keydown", (e)=>{
@@ -1032,24 +1236,18 @@
     if(e.key === "3") pickChoice(2);
   });
 
-  // Buttons
-  document.getElementById("restartBtn").addEventListener("click", reset);
-  document.getElementById("openSummaryBtn").addEventListener("click", openSummary);
-  document.getElementById("closeModalBtn").addEventListener("click", closeSummary);
-  document.getElementById("summaryModal").addEventListener("click", (e)=>{ if(e.target.id==="summaryModal") closeSummary(); });
+  // Restart
+  elRestart.addEventListener("click", reset);
 
-  document.getElementById("copyBtn").addEventListener("click", async ()=>{
-    try{
-      await navigator.clipboard.writeText(elSummaryText.value);
-      const b = document.getElementById("copyBtn");
-      b.textContent = "Copied";
-      setTimeout(()=> b.textContent = "Copy session summary", 900);
-    } catch(err){
-      const b = document.getElementById("copyBtn");
-      b.textContent = "Copy failed";
-      setTimeout(()=> b.textContent = "Copy session summary", 1200);
-    }
-  });
+  // Helpers
+  function escapeHtml(s){
+    return String(s)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
 
   // Init
   updateMeters();
