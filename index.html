@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Elementary Family Partnership Meeting Simulator</title>
 
+  <!-- NEW: jsPDF for real PDF downloads -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
   <style>
     :root{
       --bg:#0b1020;
@@ -178,7 +181,6 @@
     .hint{ font-size: 12px; color: var(--muted); margin-top: 8px; }
     .warn{ color: var(--warn); }
 
-    /* Final Review */
     .review{
       border: 1px solid var(--border);
       background: rgba(0,0,0,0.18);
@@ -213,19 +215,6 @@
     }
     .suggestions ul{ margin: 8px 0 0 18px; }
     .smallmuted{ color: var(--muted); font-size: 12px; margin-top: 8px; }
-
-    /* Print to PDF styling */
-    @media print{
-      body{ background:#fff; color:#000; }
-      .topbar, .sidebar, #restartBtn, .footer, .pillrow, .btnrow.no-print { display:none !important; }
-      .board{ display:block; }
-      .card{ box-shadow:none; border: none; }
-      .card .hd{ border:none; }
-      .card .bd{ padding: 0; }
-      .transcript{ max-height:none; overflow:visible; border: none; background:#fff; color:#000; }
-      .review, .suggestions{ border:none; background:#fff; color:#000; }
-      .btn{ display:none !important; }
-    }
   </style>
 </head>
 
@@ -260,7 +249,6 @@
           <p class="sub" id="sceneSub"></p>
 
           <div id="profileChoices" class="choices"></div>
-
           <div id="gameChoices" class="choices" style="display:none;"></div>
 
           <div id="inputPanel" class="inputwrap" style="display:none;">
@@ -273,17 +261,12 @@
             <div class="hint warn" id="validationMsg" style="display:none;"></div>
           </div>
 
-          <!-- Final Review Panel -->
           <div id="finalReview" class="review" style="display:none;">
             <h2>Final Review: Read your transcript</h2>
             <p>
               This is your full conversation path (choices, your written responses, caregiver reactions, and coaching notes).
-              Read it once. Then click Download PDF and upload it to Canvas.
+              Click Download results as PDF and upload it to Canvas.
             </p>
-
-            <div class="transcript" id="transcriptBox"></div>
-
-            <div class="suggestions" id="suggestionsBox"></div>
 
             <div class="btnrow">
               <button class="btn" id="downloadPdfBtn">Download results as PDF</button>
@@ -291,8 +274,11 @@
               <button class="btn" id="copyTranscriptBtn">Copy transcript</button>
             </div>
 
+            <div class="transcript" id="transcriptBox"></div>
+            <div class="suggestions" id="suggestionsBox"></div>
+
             <div class="smallmuted">
-              PDF tip: your browser will open a print window. Choose “Save as PDF” and save the file, then upload it to Canvas.
+              If your browser blocks downloads, allow downloads for this site and click the button again.
             </div>
           </div>
 
@@ -319,11 +305,9 @@
             <div class="bar"><div class="fill" id="collabBar"></div></div>
           </div>
 
-          <div class="note" id="coachNote">
-            Choose a scenario to begin.
-          </div>
+          <div class="note" id="coachNote">Choose a scenario to begin.</div>
 
-          <div class="btnrow no-print">
+          <div class="btnrow">
             <button class="btn" id="restartBtn">Restart</button>
           </div>
 
@@ -390,10 +374,7 @@
       familyNeeds: ["Reading should feel encouraging, not stressful", "Evenings are short and busy", "Clear guidance in plain language"],
       context: {
         concernObs: "During independent reading, the student reads for 1 to 2 minutes, then looks around, flips pages quickly, or asks to leave the area. This happens most days.",
-        pattern: "More likely when the text feels hard, or after a long transition.",
-        sharedGoalExamples: ["Read independently for 8 minutes using a choice book and one support", "Complete 3 short reading check-ins per week with confidence-building feedback"],
-        schoolOptions: ["Choice books at an accessible level plus a high-interest supported stretch book", "Preview 3 key words before reading and use a short timer with a goal to grow by 1 minute each week"],
-        homeOptions: ["5 minute routine with choice (read to caregiver or audiobook plus print)", "Two questions after reading: “What happened?” and “What was one new word?”"]
+        pattern: "More likely when the text feels hard, or after a long transition."
       }
     },
     {
@@ -404,10 +385,7 @@
       familyNeeds: ["Fewer surprise messages, more predictable updates", "Busy evenings with siblings and activities", "Plan must be realistic and not time-consuming"],
       context: {
         concernObs: "The student frequently starts assignments but does not finish, or completes work but does not turn it in. Missing work clusters around multi-step tasks.",
-        pattern: "More likely after recess and during transitions between subjects.",
-        sharedGoalExamples: ["Use a simple tracker to turn in 4 out of 5 assignments each week", "Complete a 2-minute start routine for independent work in each subject"],
-        schoolOptions: ["Daily 2-minute check-in at the start of work time plus a desk checklist", "Break assignments into two chunks with a quick teacher check after chunk one"],
-        homeOptions: ["Backpack check once per day using a short checklist (2 to 3 items max)", "One weekly check-in message with the teacher using the family’s preferred method"]
+        pattern: "More likely after recess and during transitions between subjects."
       }
     },
     {
@@ -418,176 +396,72 @@
       familyNeeds: ["Language access for communication and notes", "Relationship-building, less rush", "Invitations to share family priorities and culture"],
       context: {
         concernObs: "In class discussions, the student often avoids speaking, looks down, or whispers to a peer instead of sharing with the group.",
-        pattern: "Participates more in pairs and hands-on tasks, less during fast-paced whole-group talk.",
-        sharedGoalExamples: ["Share one idea per day using a choice of formats (picture, sentence stem, partner first)", "Participate in small group at least 3 times per week"],
-        schoolOptions: ["Partner-share first, then optional whole-group share using a sentence stem", "Picture supports and multiple ways to show understanding"],
-        homeOptions: ["Family shares topics the child loves so school can connect lessons to interests", "Caregiver provides encouraging phrases that feel natural in the home language"]
+        pattern: "Participates more in pairs and hands-on tasks, less during fast-paced whole-group talk."
       }
     }
   ];
 
   const scenes = [
-    {
-      title: "Moment 1: Opening the meeting",
-      prompt: (p)=> `You are starting a short meeting with the caregiver for: ${p.name}. What do you say first?`,
-      sub: "Aim: set a respectful tone, begin with strengths, invite partnership.",
-      choices: [
-        { text: "Start with appreciation and strengths, and invite their perspective.", delta: {trust:+10, clarity:+4, collab:+8},
-          reaction: "Caregiver relaxes a bit and shares a positive story.",
-          coach: "Strengths-first plus curiosity helps families feel respected." },
-        { text: "Start with urgency about the problem.", delta: {trust:-10, clarity:+2, collab:-8},
-          reaction: "Caregiver becomes guarded and gives short answers.",
-          coach: "This can feel blaming. Start with relationship and shared goals instead." },
-        { text: "Start with a teacher-led agenda and decisions.", delta: {trust:-4, clarity:+8, collab:-8},
-          reaction: "Caregiver listens, but does not contribute much.",
-          coach: "Clarity helps, but partnership requires shared decision-making language." }
-      ]
-    },
-    {
-      title: "Moment 2: Family expertise and priorities",
-      prompt: ()=> "You want to learn what the caregiver values and notices. What do you ask?",
-      sub: "Aim: invite family priorities and context.",
-      choices: [
-        { text: "Ask about strengths and what is most important to the family right now.", delta: {trust:+10, clarity:+4, collab:+10},
-          reaction: "Caregiver shares strengths and a clear priority.",
-          coach: "This keeps the focus on shared goals and family voice." },
-        { text: "Ask if they agree the child is the issue to solve.", delta: {trust:-8, clarity:+2, collab:-8},
-          reaction: "Caregiver hesitates and seems defensive.",
-          coach: "Avoid forcing agreement. Build shared understanding through questions and examples." },
-        { text: "Ask if they have tried being stricter.", delta: {trust:-12, clarity:+1, collab:-12},
-          reaction: "Caregiver looks offended and shuts down.",
-          coach: "This implies blame. Reframe toward supports and what has worked." }
-      ]
-    },
-    {
-      title: "Moment 3: Describe the concern (neutral and observable)",
-      prompt: (p)=> "You describe what you are seeing at school. Which framing do you use?",
-      sub: "Aim: be specific, neutral, observable. Avoid labels.",
-      choices: [
-        { text: (p)=> `Use observable language: “Here is what we notice: ${p.context.concernObs}”`, delta: {trust:+5, clarity:+12, collab:+5},
-          reaction: "Caregiver nods and asks when it tends to happen.",
-          coach: "Observable language supports clarity and reduces shame." },
-        { text: "Use labels like unmotivated or not trying.", delta: {trust:-8, clarity:-6, collab:-6},
-          reaction: "Caregiver asks what you mean and seems tense.",
-          coach: "Labels are vague and can feel judgmental. Describe what you see instead." },
-        { text: "Generalize that things are not going well.", delta: {trust:-6, clarity:-6, collab:-6},
-          reaction: "Caregiver looks worried and unsure what is happening.",
-          coach: "Families need concrete examples to problem-solve effectively." }
-      ]
-    },
-    {
-      title: "Moment 4: Ask for home perspective (whole-child)",
-      prompt: ()=> "Now you invite the caregiver perspective. Which question best supports partnership?",
-      sub: "Aim: learn routines, motivation, culture, and what works at home.",
-      choices: [
-        { text: "Ask what they notice at home and what helps their child have a good day.", delta: {trust:+10, clarity:+4, collab:+10},
-          reaction: "Caregiver shares helpful routines and a possible trigger.",
-          coach: "This invites context and builds shared understanding." },
-        { text: "Ask what consequences they use at home.", delta: {trust:-6, clarity:+3, collab:-6},
-          reaction: "Caregiver answers, but seems wary.",
-          coach: "Keep the focus on supports and what works." },
-        { text: "Ask them to reinforce what school does.", delta: {trust:-8, clarity:+2, collab:-10},
-          reaction: "Caregiver looks stressed and unsure.",
-          coach: "Partnership means co-creating something feasible." }
-      ]
-    },
-    {
-      title: "Moment 5: Reduce barriers and improve access",
-      prompt: ()=> "You want communication to be respectful and accessible. What do you propose?",
-      sub: "Aim: confirm preferred method, language access, feasible timing.",
-      choices: [
-        { text: "Ask about preferred communication method, timing, and language access; offer flexibility.", delta: {trust:+10, clarity:+6, collab:+10},
-          reaction: "Caregiver shares preferences and feels respected.",
-          coach: "This reduces barriers and shows flexibility." },
-        { text: "Default to weekly emails.", delta: {trust:-4, clarity:+3, collab:-6},
-          reaction: "Caregiver says email is hard.",
-          coach: "Offer options and confirm what works." },
-        { text: "Insist in-person is best each time.", delta: {trust:-3, clarity:+2, collab:-4},
-          reaction: "Caregiver worries about barriers.",
-          coach: "Ask and problem-solve together instead." }
-      ]
-    },
-    {
-      title: "Moment 6: Shared goal (family voice first)",
-      prompt: ()=> "You want a shared goal that matters to the family and the classroom. What do you do?",
-      sub: "Aim: co-create an observable, positive goal that fits the context.",
-      choices: [
-        { text: "Invite the family to choose one goal for the next two weeks.", delta: {trust:+8, clarity:+6, collab:+14},
-          reaction: "Caregiver names a priority and asks what school can do.",
-          coach: "Shared decision-making increases buy-in." },
-        { text: "Set a vague goal like improve and do better.", delta: {trust:-2, clarity:-10, collab:-4},
-          reaction: "Caregiver asks what improve means.",
-          coach: "Goals should be observable and concrete." },
-        { text: "Use technical language and percentages.", delta: {trust:-6, clarity:-4, collab:-6},
-          reaction: "Caregiver looks confused.",
-          coach: "Keep family-facing goals in plain language." }
-      ]
-    },
-    {
-      title: "Moment 7: Build a plan with options (school and home)",
-      prompt: (p)=> "Time to co-create strategies. Which approach best supports partnership?",
-      sub: "Aim: offer options, check feasibility, align routines.",
-      choices: [
-        { text: (p)=> `Offer two school options and ask what feels doable at home.\nSchool option A: ${p.context.schoolOptions[0]}\nSchool option B: ${p.context.schoolOptions[1]}`,
-          delta: {trust:+8, clarity:+8, collab:+12},
-          reaction: "Caregiver picks an option and suggests a small home routine that fits their schedule.",
-          coach: "Choices plus feasibility checks support follow-through." },
-        { text: "Assign a home plan the family should do nightly.", delta: {trust:-12, clarity:+2, collab:-14},
-          reaction: "Caregiver feels blamed and says they cannot do that.",
-          coach: "Avoid prescribing. Co-create something that matches context." },
-        { text: "Keep it only at school and exclude the family.", delta: {trust:+1, clarity:+2, collab:-6},
-          reaction: "Caregiver is relieved but unsure about consistency.",
-          coach: "Offer an optional tiny home step informed by the family." }
-      ]
-    },
-    {
-      title: "Moment 8: Whole-child check",
-      prompt: ()=> "Before finalizing, you do a quick whole-child check. What do you say?",
-      sub: "Aim: include learning, routine, relationship/communication support.",
-      choices: [
-        { text: "Ensure the plan includes learning support, routine support, and relationship/communication support.", delta: {trust:+8, clarity:+10, collab:+12},
-          reaction: "Caregiver adds one key detail that improves the plan.",
-          coach: "This keeps the plan balanced and partnership-centered." },
-        { text: "Skip the check because you already have enough.", delta: {trust:-4, clarity:-2, collab:-6},
-          reaction: "Caregiver agrees but looks uncertain.",
-          coach: "A quick check can prevent gaps." },
-        { text: "Skip family involvement because it is mostly school-based.", delta: {trust:-2, clarity:-2, collab:-8},
-          reaction: "Caregiver feels less included.",
-          coach: "Even a small family-informed step increases shared ownership." }
-      ]
-    },
-    {
-      title: "Moment 9: Monitor progress without intimidation",
-      prompt: ()=> "You want a simple way to monitor progress and communicate. What do you propose?",
-      sub: "Aim: simple, non-punitive, predictable, aligned with preference.",
-      choices: [
-        { text: "Weekly check-in with one number and one note, plus one positive highlight.", delta: {trust:+8, clarity:+10, collab:+8},
-          reaction: "Caregiver agrees and asks what the number represents.",
-          coach: "Simple data and predictable communication supports trust." },
-        { text: "Send lots of data and graphs.", delta: {trust:-2, clarity:+3, collab:-2},
-          reaction: "Caregiver looks overwhelmed.",
-          coach: "Start simple and ask what families prefer." },
-        { text: "Only contact the caregiver when things go badly.", delta: {trust:-10, clarity:-2, collab:-10},
-          reaction: "Caregiver worries they will only hear negative news.",
-          coach: "Problem-only contact erodes trust." }
-      ]
-    },
-    {
-      title: "Moment 10: Close and follow up",
-      prompt: ()=> "You close the meeting and send a follow-up message. Which version do you choose?",
-      sub: "Aim: strengths-based summary, plain language, roles, next steps, appreciation.",
-      choices: [
-        { text: "Send a strengths-based summary with roles, next steps, and a check-in time.", delta: {trust:+10, clarity:+12, collab:+10},
-          reaction: "Caregiver replies with appreciation and one clarification.",
-          coach: "This reinforces shared ownership and keeps the plan alive." },
-        { text: "Send a jargon-filled recap with acronyms.", delta: {trust:-6, clarity:-8, collab:-6},
-          reaction: "Caregiver does not respond.",
-          coach: "Jargon creates distance." },
-        { text: "Send a warning-style message to remind the child to do better.", delta: {trust:-14, clarity:-4, collab:-14},
-          reaction: "Caregiver feels blamed and disengages.",
-          coach: "Avoid blame. Focus on shared supports and next steps." }
-      ]
-    }
+    { title:"Moment 1: Opening the meeting", prompt:(p)=>`You are starting a short meeting with the caregiver for: ${p.name}. What do you say first?`, sub:"Aim: strengths-first and partnership.",
+      choices:[
+        { text:"Start with appreciation and strengths, and invite their perspective.", delta:{trust:+10, clarity:+4, collab:+8}, reaction:"Caregiver relaxes a bit and shares a positive story.", coach:"Strengths-first plus curiosity helps families feel respected." },
+        { text:"Start with urgency about the problem.", delta:{trust:-10, clarity:+2, collab:-8}, reaction:"Caregiver becomes guarded and gives short answers.", coach:"This can feel blaming. Start with relationship and shared goals instead." },
+        { text:"Start with a teacher-led agenda and decisions.", delta:{trust:-4, clarity:+8, collab:-8}, reaction:"Caregiver listens, but does not contribute much.", coach:"Clarity helps, but partnership requires shared decision-making language." }
+      ]},
+    { title:"Moment 2: Family expertise and priorities", prompt:()=> "You want to learn what the caregiver values and notices. What do you ask?", sub:"Aim: family voice and priorities.",
+      choices:[
+        { text:"Ask about strengths and what is most important to the family right now.", delta:{trust:+10, clarity:+4, collab:+10}, reaction:"Caregiver shares strengths and a clear priority.", coach:"This keeps the focus on shared goals and family voice." },
+        { text:"Ask if they agree the child is the issue to solve.", delta:{trust:-8, clarity:+2, collab:-8}, reaction:"Caregiver hesitates and seems defensive.", coach:"Avoid forcing agreement. Build shared understanding through questions and examples." },
+        { text:"Ask if they have tried being stricter.", delta:{trust:-12, clarity:+1, collab:-12}, reaction:"Caregiver looks offended and shuts down.", coach:"This implies blame. Reframe toward supports and what has worked." }
+      ]},
+    { title:"Moment 3: Describe the concern (neutral and observable)", prompt:(p)=>"You describe what you are seeing at school. Which framing do you use?", sub:"Aim: neutral, observable language.",
+      choices:[
+        { text:(p)=>`Use observable language: “Here is what we notice: ${p.context.concernObs}”`, delta:{trust:+5, clarity:+12, collab:+5}, reaction:"Caregiver nods and asks when it tends to happen.", coach:"Observable language supports clarity and reduces shame." },
+        { text:"Use labels like unmotivated or not trying.", delta:{trust:-8, clarity:-6, collab:-6}, reaction:"Caregiver asks what you mean and seems tense.", coach:"Labels are vague and can feel judgmental. Describe what you see instead." },
+        { text:"Generalize that things are not going well.", delta:{trust:-6, clarity:-6, collab:-6}, reaction:"Caregiver looks worried and unsure what is happening.", coach:"Families need concrete examples to problem-solve effectively." }
+      ]},
+    { title:"Moment 4: Ask for home perspective (whole-child)", prompt:()=> "Now you invite the caregiver perspective. Which question best supports partnership?", sub:"Aim: routines, context, what works at home.",
+      choices:[
+        { text:"Ask what they notice at home and what helps their child have a good day.", delta:{trust:+10, clarity:+4, collab:+10}, reaction:"Caregiver shares helpful routines and a possible trigger.", coach:"This invites context and builds shared understanding." },
+        { text:"Ask what consequences they use at home.", delta:{trust:-6, clarity:+3, collab:-6}, reaction:"Caregiver answers, but seems wary.", coach:"Keep the focus on supports and what works." },
+        { text:"Ask them to reinforce what school does.", delta:{trust:-8, clarity:+2, collab:-10}, reaction:"Caregiver looks stressed and unsure.", coach:"Partnership means co-creating something feasible." }
+      ]},
+    { title:"Moment 5: Reduce barriers and improve access", prompt:()=> "You want communication to be respectful and accessible. What do you propose?", sub:"Aim: preference + access.",
+      choices:[
+        { text:"Ask about preferred communication method, timing, and language access; offer flexibility.", delta:{trust:+10, clarity:+6, collab:+10}, reaction:"Caregiver shares preferences and feels respected.", coach:"This reduces barriers and shows flexibility." },
+        { text:"Default to weekly emails.", delta:{trust:-4, clarity:+3, collab:-6}, reaction:"Caregiver says email is hard.", coach:"Offer options and confirm what works." },
+        { text:"Insist in-person is best each time.", delta:{trust:-3, clarity:+2, collab:-4}, reaction:"Caregiver worries about barriers.", coach:"Ask and problem-solve together instead." }
+      ]},
+    { title:"Moment 6: Shared goal (family voice first)", prompt:()=> "You want a shared goal that matters to the family and the classroom. What do you do?", sub:"Aim: shared goal in plain language.",
+      choices:[
+        { text:"Invite the family to choose one goal for the next two weeks.", delta:{trust:+8, clarity:+6, collab:+14}, reaction:"Caregiver names a priority and asks what school can do.", coach:"Shared decision-making increases buy-in." },
+        { text:"Set a vague goal like improve and do better.", delta:{trust:-2, clarity:-10, collab:-4}, reaction:"Caregiver asks what improve means.", coach:"Goals should be observable and concrete." },
+        { text:"Use technical language and percentages.", delta:{trust:-6, clarity:-4, collab:-6}, reaction:"Caregiver looks confused.", coach:"Keep family-facing goals in plain language." }
+      ]},
+    { title:"Moment 7: Build a plan with options (school and home)", prompt:()=> "Time to co-create strategies. Which approach best supports partnership?", sub:"Aim: options + feasibility.",
+      choices:[
+        { text:"Offer two school options and ask what feels doable at home.", delta:{trust:+8, clarity:+8, collab:+12}, reaction:"Caregiver picks an option and suggests a small home routine that fits their schedule.", coach:"Choices plus feasibility checks support follow-through." },
+        { text:"Assign a home plan the family should do nightly.", delta:{trust:-12, clarity:+2, collab:-14}, reaction:"Caregiver feels blamed and says they cannot do that.", coach:"Avoid prescribing. Co-create something that matches context." },
+        { text:"Keep it only at school and exclude the family.", delta:{trust:+1, clarity:+2, collab:-6}, reaction:"Caregiver is relieved but unsure about consistency.", coach:"Offer an optional tiny home step informed by the family." }
+      ]},
+    { title:"Moment 8: Whole-child check", prompt:()=> "Before finalizing, you do a quick whole-child check. What do you say?", sub:"Aim: learning + routine + relationship.",
+      choices:[
+        { text:"Ensure the plan includes learning support, routine support, and relationship/communication support.", delta:{trust:+8, clarity:+10, collab:+12}, reaction:"Caregiver adds one key detail that improves the plan.", coach:"This keeps the plan balanced and partnership-centered." },
+        { text:"Skip the check because you already have enough.", delta:{trust:-4, clarity:-2, collab:-6}, reaction:"Caregiver agrees but looks uncertain.", coach:"A quick check can prevent gaps." },
+        { text:"Skip family involvement because it is mostly school-based.", delta:{trust:-2, clarity:-2, collab:-8}, reaction:"Caregiver feels less included.", coach:"Even a small family-informed step increases shared ownership." }
+      ]},
+    { title:"Moment 9: Monitor progress without intimidation", prompt:()=> "You want a simple way to monitor progress and communicate. What do you propose?", sub:"Aim: predictable + positive.",
+      choices:[
+        { text:"Weekly check-in with one number and one note, plus one positive highlight.", delta:{trust:+8, clarity:+10, collab:+8}, reaction:"Caregiver agrees and asks what the number represents.", coach:"Simple data and predictable communication supports trust." },
+        { text:"Send lots of data and graphs.", delta:{trust:-2, clarity:+3, collab:-2}, reaction:"Caregiver looks overwhelmed.", coach:"Start simple and ask what families prefer." },
+        { text:"Only contact the caregiver when things go badly.", delta:{trust:-10, clarity:-2, collab:-10}, reaction:"Caregiver worries they will only hear negative news.", coach:"Problem-only contact erodes trust." }
+      ]},
+    { title:"Moment 10: Close and follow up", prompt:()=> "You close the meeting and send a follow-up message. Which version do you choose?", sub:"Aim: plain-language follow-up.",
+      choices:[
+        { text:"Send a strengths-based summary with roles, next steps, and a check-in time.", delta:{trust:+10, clarity:+12, collab:+10}, reaction:"Caregiver replies with appreciation and one clarification.", coach:"This reinforces shared ownership and keeps the plan alive." },
+        { text:"Send a jargon-filled recap with acronyms.", delta:{trust:-6, clarity:-8, collab:-6}, reaction:"Caregiver does not respond.", coach:"Jargon creates distance." },
+        { text:"Send a warning-style message to remind the child to do better.", delta:{trust:-14, clarity:-4, collab:-14}, reaction:"Caregiver feels blamed and disengages.", coach:"Avoid blame. Focus on shared supports and next steps." }
+      ]}
   ];
 
   const typedPrompts = {
@@ -703,10 +577,7 @@
     profiles.forEach(p=>{
       const b = document.createElement("button");
       b.className = "choice";
-      b.innerHTML = `
-        <strong>${p.name}</strong>
-        <div style="margin-top:6px;color:var(--muted);font-size:13px;">${p.overview}</div>
-      `;
+      b.innerHTML = `<strong>${p.name}</strong><div style="margin-top:6px;color:var(--muted);font-size:13px;">${p.overview}</div>`;
       b.onclick = ()=> selectProfile(p.id);
       elProfileChoices.appendChild(b);
     });
@@ -781,11 +652,11 @@
     elTranscriptBox.textContent = buildTranscriptText();
     elSuggestionsBox.innerHTML = buildSuggestionsHtml();
 
-    elCoachNote.textContent = "Download your results as a PDF for Canvas.";
+    elCoachNote.textContent = "Click Download results as PDF and upload it to Canvas.";
     elCardTitle.textContent = "Complete";
     elProgress.textContent = `${state.maxSteps} of ${state.maxSteps}`;
     elSceneText.textContent = "You have completed the simulation.";
-    elSceneSub.textContent = "Click Download results as PDF, then upload the PDF to Canvas along with your written reflection.";
+    elSceneSub.textContent = "Download your PDF for Canvas now.";
   }
   function hideFinalReview(){
     elFinalReview.style.display = "none";
@@ -826,13 +697,7 @@
 
     updateMeters();
 
-    state.transcript.push({
-      type: "write",
-      label: tpKey,
-      teacher: text.trim(),
-      caregiver: reaction,
-      coach
-    });
+    state.transcript.push({ type:"write", label: tpKey, teacher: text.trim(), caregiver: reaction, coach });
 
     logLine("Written response submitted.");
     logLine(`Coaching note: ${coach}`);
@@ -889,13 +754,7 @@
 
     const chosenText = getChoiceText(c, profile);
 
-    state.transcript.push({
-      type: "choice",
-      title: scene.title,
-      teacher: chosenText,
-      caregiver: c.reaction,
-      coach: c.coach
-    });
+    state.transcript.push({ type:"choice", title: scene.title, teacher: chosenText, caregiver: c.reaction, coach: c.coach });
 
     logLine(`Moment ${state.step+1}: Option ${idx+1} selected.`);
     logLine(`Caregiver reaction: ${c.reaction}`);
@@ -913,7 +772,7 @@
     }, 650);
   }
 
-  // Typed submit (no skip allowed)
+  // Typed submit (required)
   elSubmitText.addEventListener("click", ()=>{
     const tp = typedPrompts[state.step];
     if(!tp) return;
@@ -962,10 +821,7 @@
 
   function buildSuggestionsHtml(){
     const items = suggestList();
-    return `
-      <strong>Suggestions for improving your next meeting</strong>
-      <ul>${items.map(i=>`<li>${escapeHtml(i)}</li>`).join("")}</ul>
-    `;
+    return `<strong>Suggestions for improving your next meeting</strong><ul>${items.map(i=>`<li>${escapeHtml(i)}</li>`).join("")}</ul>`;
   }
 
   function buildTranscriptText(){
@@ -1007,69 +863,74 @@
     const mins = Math.max(1, Math.round(state.seconds/60));
     const strengths = p.strengths.map(s=>`- ${s}`).join("\n");
     const needs = p.familyNeeds.map(s=>`- ${s}`).join("\n");
-    const planIdeas = [
-      "Possible goal and strategy ideas (from this scenario)",
-      "Shared goal examples",
-      ...p.context.sharedGoalExamples.map(g=>`- ${g}`),
-      "",
-      "Possible school supports",
-      ...p.context.schoolOptions.map(s=>`- ${s}`),
-      "",
-      "Possible home supports",
-      ...p.context.homeOptions.map(s=>`- ${s}`)
-    ].join("\n");
 
     return [
-      "ELEMENTARY FAMILY PARTNERSHIP MEETING SIMULATOR: SESSION SUMMARY",
+      "ELEMENTARY FAMILY PARTNERSHIP MEETING SIMULATOR: SUMMARY",
       "",
       `Scenario: ${p.name} (Scenario ${p.id})`,
       `Time in simulation: ~${mins} minutes`,
       "",
-      "Scenario context",
       `Observed concern at school (neutral): ${p.context.concernObs}`,
-      `Pattern (when it is more likely): ${p.context.pattern}`,
+      `Pattern: ${p.context.pattern}`,
       "",
-      "Strengths and family needs (from the profile)",
-      "Strengths",
+      "Strengths (from the profile)",
       strengths,
       "",
-      "Family needs",
+      "Family needs (from the profile)",
       needs,
       "",
       "Your results",
       `Trust: ${state.trust}`,
       `Clarity: ${state.clarity}`,
       `Collaboration: ${state.collab}`,
-      `Overall meeting outcome: ${outcomeLabel()}`,
-      "",
-      planIdeas,
-      "",
-      "Reflection prompts (write 1 page total)",
-      "1) What did you do that supported trust and collaboration? Use at least two specific moments from your transcript.",
-      "2) Quote one sentence you wrote or would say that shows strengths-based partnering.",
-      "3) What would you change next time to improve one area (trust, clarity, or collaboration)?",
-      "4) What is one concrete follow-up action you would take this week (method, timing, and content)?",
+      `Outcome: ${outcomeLabel()}`,
       ""
     ].join("\n");
   }
 
-  function finishGame(){
-    state.started = false;
-    stopTimer();
+  // NEW: Real PDF download (no print dialog)
+  function downloadPDF(){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: "pt", format: "letter" });
 
-    logLine("Simulation complete.");
-    logLine(`Outcome: ${outcomeLabel()}`);
+    const margin = 48;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const maxWidth = pageWidth - margin * 2;
 
-    showFinalReview();
+    const summary = buildSessionSummary();
+    const transcript = buildTranscriptText();
+    const suggestionsPlain = "SUGGESTIONS\n----------\n" + suggestList().map(s => "- " + s).join("\n");
 
-    // Optional: auto-open print dialog right away
-    // window.print();
+    const fullText =
+      summary + "\n\n" +
+      transcript + "\n\n" +
+      suggestionsPlain + "\n";
+
+    doc.setFont("Times", "Normal");
+    doc.setFontSize(11);
+
+    const lines = doc.splitTextToSize(fullText, maxWidth);
+
+    let y = margin;
+    const lineHeight = 14;
+
+    for(const line of lines){
+      if(y + lineHeight > pageHeight - margin){
+        doc.addPage();
+        y = margin;
+      }
+      doc.text(line, margin, y);
+      y += lineHeight;
+    }
+
+    const safeScenario = currentProfile().id;
+    const filename = `FamilyPartnershipSim_Scenario${safeScenario}.pdf`;
+    doc.save(filename);
   }
 
   // Buttons
-  elDownloadPdfBtn.addEventListener("click", ()=>{
-    window.print();
-  });
+  elDownloadPdfBtn.addEventListener("click", downloadPDF);
 
   elCopyTranscriptBtn.addEventListener("click", async ()=>{
     try{
@@ -1093,7 +954,6 @@
     }
   });
 
-  // Keyboard shortcuts for choice screens only
   window.addEventListener("keydown", (e)=>{
     if(!state.choicesLive) return;
     if(e.key === "1") pickChoice(0);
@@ -1103,7 +963,14 @@
 
   elRestart.addEventListener("click", reset);
 
-  // Helpers
+  function finishGame(){
+    state.started = false;
+    stopTimer();
+    logLine("Simulation complete.");
+    logLine(`Outcome: ${outcomeLabel()}`);
+    showFinalReview();
+  }
+
   function escapeHtml(s){
     return String(s)
       .replaceAll("&","&amp;")
