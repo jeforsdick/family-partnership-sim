@@ -249,6 +249,11 @@
           <p class="sub" id="sceneSub"></p>
 
           <div id="profileChoices" class="choices"></div>
+          <div id="namePanel" class="inputwrap" style="margin-top:12px;">
+  <label for="studentName">Student name (required for PDF filename)</label>
+  <textarea id="studentName" style="min-height:48px;" placeholder="Type your full name"></textarea>
+  <div class="hint" id="nameHint">You will choose a scenario after entering your name.</div>
+</div>
           <div id="gameChoices" class="choices" style="display:none;"></div>
 
           <div id="inputPanel" class="inputwrap" style="display:none;">
@@ -350,21 +355,21 @@
   }
 
   const state = {
-    started: false,
-    profileId: null,
-    step: 0,
-    maxSteps: 10,
-    trust: 50,
-    clarity: 50,
-    collab: 50,
-    log: [],
-    seconds: 0,
-    timer: null,
-    choicesLive: false,
-    typed: {},
-    transcript: []
-  };
-
+  started: false,
+  profileId: null,
+  step: 0,
+  maxSteps: 10,
+  trust: 50,
+  clarity: 50,
+  collab: 50,
+  log: [],
+  seconds: 0,
+  timer: null,
+  choicesLive: false,
+  typed: {},
+  transcript: [],
+  studentName: ""
+};
   const profiles = [
     {
       id: "A",
@@ -511,6 +516,8 @@
   const elDownloadPdfBtn = document.getElementById("downloadPdfBtn");
   const elCopySummaryBtn = document.getElementById("copySummaryBtn");
   const elCopyTranscriptBtn = document.getElementById("copyTranscriptBtn");
+  const elStudentName = document.getElementById("studentName");
+const elNamePanel = document.getElementById("namePanel");
 
   function updateMeters(){
     elTrustVal.textContent = state.trust;
@@ -559,6 +566,8 @@
     elLog.textContent = "No actions yet.";
     hideInputPanel();
     hideFinalReview();
+    if (elNamePanel) elNamePanel.style.display = "block";
+if (elStudentName) elStudentName.value = state.studentName || "";
   }
 
   function renderStart(){
@@ -573,6 +582,8 @@
     elProfileChoices.innerHTML = "";
     hideInputPanel();
     hideFinalReview();
+    if (elNamePanel) elNamePanel.style.display = "block";
+if (elStudentName) elStudentName.value = state.studentName || "";
 
     profiles.forEach(p=>{
       const b = document.createElement("button");
@@ -590,11 +601,19 @@
   }
 
   function selectProfile(id){
+    const name = (elStudentName ? elStudentName.value : "").trim();
+if (!name) {
+  alert("Please enter your name so your PDF downloads with your name.");
+  return;
+}
+state.studentName = name;
+if (elNamePanel) elNamePanel.style.display = "none";
     state.profileId = id;
     state.started = true;
     state.seconds = 0;
     state.step = 0;
 
+    logLine(`Student: ${state.studentName}`);
     logLine(`Selected scenario: ${currentProfile().name}`);
     startTimer();
     renderStep();
@@ -905,10 +924,13 @@ if (state.step >= state.maxSteps) {
     const transcript = buildTranscriptText();
     const suggestionsPlain = "SUGGESTIONS\n----------\n" + suggestList().map(s => "- " + s).join("\n");
 
-    const fullText =
-      summary + "\n\n" +
-      transcript + "\n\n" +
-      suggestionsPlain + "\n";
+    const headerLine = `Student: ${state.studentName || "Student"}`;
+
+const fullText =
+  headerLine + "\n\n" +
+  summary + "\n\n" +
+  transcript + "\n\n" +
+  suggestionsPlain + "\n";
 
     doc.setFont("Times", "Normal");
     doc.setFontSize(11);
@@ -928,8 +950,11 @@ if (state.step >= state.maxSteps) {
     }
 
     const safeScenario = currentProfile().id;
-    const filename = `FamilyPartnershipSim_Scenario${safeScenario}.pdf`;
-    doc.save(filename);
+const safeName = (state.studentName || "Student")
+  .replace(/[^a-z0-9]+/gi, "_")
+  .replace(/^_+|_+$/g, "");
+const filename = `FamilyPartnershipSim_${safeName}_Scenario${safeScenario}.pdf`;
+doc.save(filename);
   }
 
   // Buttons
@@ -965,7 +990,7 @@ if (state.step >= state.maxSteps) {
   });
 
   elRestart.addEventListener("click", reset);
-
+  
   function finishGame(){
     state.started = false;
     stopTimer();
