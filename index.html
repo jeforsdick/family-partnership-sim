@@ -789,8 +789,11 @@
     applyTextBranching(tp.key, txt);
 
     state.step += 1;
-    renderStep();
-  });
+if (state.step >= state.maxSteps) {
+  finishGame();
+} else {
+  renderStep();
+}
 
   function outcomeLabel(){
     const avg = Math.round((state.trust + state.clarity + state.collab)/3);
