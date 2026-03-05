@@ -212,56 +212,19 @@
       font-size: 13px;
     }
     .suggestions ul{ margin: 8px 0 0 18px; }
-    .fieldrow{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      align-items:center;
-      margin-top: 10px;
-    }
-    input[type="email"]{
-      flex: 1 1 260px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: rgba(0,0,0,0.20);
-      color: var(--text);
-      padding: 10px 12px;
-      font-size: 13px;
-    }
     .smallmuted{ color: var(--muted); font-size: 12px; margin-top: 8px; }
-
-    /* Modal */
-    .modal{
-      position:fixed;
-      inset:0;
-      background: rgba(0,0,0,0.55);
-      display:none;
-      align-items:center;
-      justify-content:center;
-      padding: 18px;
-    }
-    .modal.open{display:flex;}
-    .modal .panel{
-      max-width: 900px;
-      width:100%;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      box-shadow: 0 14px 30px var(--shadow);
-      overflow:hidden;
-    }
-    .panel .bd{ padding: 16px; }
 
     /* Print to PDF styling */
     @media print{
       body{ background:#fff; color:#000; }
-      .topbar, .sidebar, #restartBtn, #openSummaryBtn, .footer, .btn, .pillrow { display:none !important; }
+      .topbar, .sidebar, #restartBtn, .footer, .pillrow, .btnrow.no-print { display:none !important; }
       .board{ display:block; }
       .card{ box-shadow:none; border: none; }
       .card .hd{ border:none; }
       .card .bd{ padding: 0; }
       .transcript{ max-height:none; overflow:visible; border: none; background:#fff; color:#000; }
       .review, .suggestions{ border:none; background:#fff; color:#000; }
+      .btn{ display:none !important; }
     }
   </style>
 </head>
@@ -273,12 +236,12 @@
         <h1>Elementary Family Partnership Meeting Simulator</h1>
         <p>
           Practice strengths-based, culturally responsive partnering across academics, routines, and belonging.
-          You will make choices and write a few short responses in your own words.
+          You will make choices and write three short responses in your own words. At the end, download your results as a PDF for Canvas.
         </p>
         <div class="pillrow">
           <div class="pill">Estimated time: 25 to 35 minutes</div>
-          <div class="pill">10 moments + 3 short written responses</div>
-          <div class="pill">End: transcript review + PDF for Canvas</div>
+          <div class="pill">10 moments + 3 written responses</div>
+          <div class="pill">End: transcript review + PDF download</div>
         </div>
       </div>
       <div class="pillrow">
@@ -287,7 +250,7 @@
     </div>
 
     <div class="board">
-      <div class="card">
+      <div class="card" id="mainCard">
         <div class="hd">
           <strong id="cardTitle">Start</strong>
           <span class="pill" id="progressPill">0 of 10</span>
@@ -306,7 +269,6 @@
             <div class="hint" id="inputHint"></div>
             <div class="btnrow">
               <button class="btn" id="submitTextBtn">Submit response</button>
-              <button class="btn" id="skipTextBtn" title="Not recommended">Skip</button>
             </div>
             <div class="hint warn" id="validationMsg" style="display:none;"></div>
           </div>
@@ -316,24 +278,21 @@
             <h2>Final Review: Read your transcript</h2>
             <p>
               This is your full conversation path (choices, your written responses, caregiver reactions, and coaching notes).
-              Read it once. Then download a PDF to submit in Canvas.
+              Read it once. Then click Download PDF and upload it to Canvas.
             </p>
 
             <div class="transcript" id="transcriptBox"></div>
 
             <div class="suggestions" id="suggestionsBox"></div>
 
-            <div class="fieldrow">
-              <input id="emailField" type="email" placeholder="Optional: your email to send yourself a draft (opens your email app)" />
-              <button class="btn" id="emailBtn">Email me the results (opens draft)</button>
-            </div>
             <div class="btnrow">
-              <button class="btn" id="downloadPdfBtn">Download PDF</button>
-              <button class="btn" id="copyTranscriptBtn">Copy transcript</button>
+              <button class="btn" id="downloadPdfBtn">Download results as PDF</button>
               <button class="btn" id="copySummaryBtn">Copy summary</button>
+              <button class="btn" id="copyTranscriptBtn">Copy transcript</button>
             </div>
+
             <div class="smallmuted">
-              Note: This site does not send emails automatically. The email button opens a draft using your own email app.
+              PDF tip: your browser will open a print window. Choose “Save as PDF” and save the file, then upload it to Canvas.
             </div>
           </div>
 
@@ -364,9 +323,8 @@
             Choose a scenario to begin.
           </div>
 
-          <div class="btnrow">
+          <div class="btnrow no-print">
             <button class="btn" id="restartBtn">Restart</button>
-            <button class="btn" id="openSummaryBtn" disabled>View summary</button>
           </div>
 
           <div>
@@ -382,25 +340,6 @@
     </div>
   </div>
 
-  <!-- Summary Modal (still available) -->
-  <div class="modal" id="summaryModal" aria-hidden="true">
-    <div class="panel">
-      <div class="hd">
-        <strong>Session Summary</strong>
-        <div class="btnrow">
-          <button class="btn" id="copyBtn">Copy session summary</button>
-          <button class="btn" id="closeModalBtn">Close</button>
-        </div>
-      </div>
-      <div class="bd">
-        <textarea id="summaryText" readonly style="min-height:260px;"></textarea>
-        <div class="smallmuted">
-          Paste this summary at the top of your 1 page reflection.
-        </div>
-      </div>
-    </div>
-  </div>
-
 <script>
 (function(){
   const clamp = (n,min,max)=> Math.max(min, Math.min(max,n));
@@ -409,7 +348,6 @@
     const r = s%60;
     return String(m).padStart(2,"0")+":"+String(r).padStart(2,"0");
   };
-  const fmtSigned = (n)=> (n>0 ? `+${n}` : String(n));
 
   function textScore(text){
     const t = (text || "").toLowerCase();
@@ -424,7 +362,7 @@
     if(hasQuestion) score += 1;
     if(hasPartnership) score += 1;
     if(hasPlain) score += 1;
-    return {score, flags:{lengthOk,hasStrength,hasQuestion,hasPartnership,hasPlain}};
+    return {score};
   }
 
   const state = {
@@ -439,9 +377,8 @@
     seconds: 0,
     timer: null,
     choicesLive: false,
-    path: [],
     typed: {},
-    transcript: [] // richer transcript entries
+    transcript: []
   };
 
   const profiles = [
@@ -686,27 +623,20 @@
   const elTimer = document.getElementById("timerPill");
 
   const elRestart = document.getElementById("restartBtn");
-  const elOpenSummary = document.getElementById("openSummaryBtn");
 
   const elInputPanel = document.getElementById("inputPanel");
   const elInputLabel = document.getElementById("inputLabel");
   const elFreeText = document.getElementById("freeText");
   const elInputHint = document.getElementById("inputHint");
   const elSubmitText = document.getElementById("submitTextBtn");
-  const elSkipText = document.getElementById("skipTextBtn");
   const elValidationMsg = document.getElementById("validationMsg");
 
   const elFinalReview = document.getElementById("finalReview");
   const elTranscriptBox = document.getElementById("transcriptBox");
   const elSuggestionsBox = document.getElementById("suggestionsBox");
-  const elEmailField = document.getElementById("emailField");
-  const elEmailBtn = document.getElementById("emailBtn");
   const elDownloadPdfBtn = document.getElementById("downloadPdfBtn");
-  const elCopyTranscriptBtn = document.getElementById("copyTranscriptBtn");
   const elCopySummaryBtn = document.getElementById("copySummaryBtn");
-
-  const elModal = document.getElementById("summaryModal");
-  const elSummaryText = document.getElementById("summaryText");
+  const elCopyTranscriptBtn = document.getElementById("copyTranscriptBtn");
 
   function updateMeters(){
     elTrustVal.textContent = state.trust;
@@ -745,11 +675,9 @@
     state.log = [];
     state.seconds = 0;
     state.choicesLive = false;
-    state.path = [];
     state.typed = {};
     state.transcript = [];
 
-    elOpenSummary.disabled = true;
     elTimer.textContent = "00:00";
     stopTimer();
     updateMeters();
@@ -762,7 +690,7 @@
   function renderStart(){
     elCardTitle.textContent = "Choose an elementary scenario";
     elProgress.textContent = `0 of ${state.maxSteps}`;
-    elSceneText.textContent = "Pick one scenario. You will navigate a short family conversation and write a few responses in your own words.";
+    elSceneText.textContent = "Pick one scenario. You will navigate a short family conversation and write three short responses in your own words.";
     elSceneSub.textContent = "Your choices affect trust, clarity, and collaboration.";
 
     elGameChoices.style.display = "none";
@@ -850,12 +778,14 @@
     elMetaRow.style.display = "none";
     hideInputPanel();
 
-    const transcript = buildTranscriptText();
-    elTranscriptBox.textContent = transcript;
-
+    elTranscriptBox.textContent = buildTranscriptText();
     elSuggestionsBox.innerHTML = buildSuggestionsHtml();
 
-    elCoachNote.textContent = "Read your transcript and use the buttons to download a PDF or submit your summary.";
+    elCoachNote.textContent = "Download your results as a PDF for Canvas.";
+    elCardTitle.textContent = "Complete";
+    elProgress.textContent = `${state.maxSteps} of ${state.maxSteps}`;
+    elSceneText.textContent = "You have completed the simulation.";
+    elSceneSub.textContent = "Click Download results as PDF, then upload the PDF to Canvas along with your written reflection.";
   }
   function hideFinalReview(){
     elFinalReview.style.display = "none";
@@ -983,15 +913,15 @@
     }, 650);
   }
 
-  // Typed submit
+  // Typed submit (no skip allowed)
   elSubmitText.addEventListener("click", ()=>{
     const tp = typedPrompts[state.step];
     if(!tp) return;
-    const txt = (elFreeText.value || "").trim();
 
-    if(txt.length < 10){
+    const txt = (elFreeText.value || "").trim();
+    if(txt.length < 40){
       elValidationMsg.style.display = "block";
-      elValidationMsg.textContent = "Please write at least a couple of sentences before submitting.";
+      elValidationMsg.textContent = "Please write at least 2 to 3 sentences before submitting.";
       return;
     }
     elValidationMsg.style.display = "none";
@@ -999,27 +929,6 @@
     state.typed[tp.key] = txt;
     applyTextBranching(tp.key, txt);
 
-    state.step += 1;
-    renderStep();
-  });
-
-  elSkipText.addEventListener("click", ()=>{
-    const tp = typedPrompts[state.step];
-    if(!tp) return;
-
-    state.typed[tp.key] = "[Skipped]";
-    state.collab = clamp(state.collab - 2, 0, 100);
-    updateMeters();
-
-    state.transcript.push({
-      type:"write",
-      label: tp.key,
-      teacher: "[Skipped]",
-      caregiver: "Caregiver gets a brief response and stays unsure about the plan.",
-      coach: "Skipping reduces clarity and collaboration. In real meetings, a short, plain-language message helps maintain partnership."
-    });
-
-    logLine("Written response skipped.");
     state.step += 1;
     renderStep();
   });
@@ -1148,39 +1057,20 @@
     state.started = false;
     stopTimer();
 
-    elCardTitle.textContent = "Complete";
-    elProgress.textContent = `${state.maxSteps} of ${state.maxSteps}`;
-    elSceneText.textContent = `Simulation complete. Outcome: ${outcomeLabel()}.`;
-    elSceneSub.textContent = "Review your full transcript below, then download a PDF for Canvas.";
-
-    elGameChoices.style.display = "none";
-    elMetaRow.style.display = "none";
-    hideInputPanel();
-
     logLine("Simulation complete.");
     logLine(`Outcome: ${outcomeLabel()}`);
 
-    elOpenSummary.disabled = false;
     showFinalReview();
+
+    // Optional: auto-open print dialog right away
+    // window.print();
   }
 
-  // Email draft (mailto)
-  elEmailBtn.addEventListener("click", ()=>{
-    const email = (elEmailField.value || "").trim();
-    const subject = encodeURIComponent("Family Partnership Simulator Results");
-    const body = encodeURIComponent(buildSessionSummary() + "\n\n" + buildTranscriptText());
-    // If they leave email blank, still open mail app for them to choose recipient
-    const to = encodeURIComponent(email);
-    const href = `mailto:${to}?subject=${subject}&body=${body}`;
-    window.location.href = href;
-  });
-
-  // Download PDF: uses print dialog with print-specific CSS
+  // Buttons
   elDownloadPdfBtn.addEventListener("click", ()=>{
     window.print();
   });
 
-  // Copy transcript and summary
   elCopyTranscriptBtn.addEventListener("click", async ()=>{
     try{
       await navigator.clipboard.writeText(buildTranscriptText());
@@ -1191,6 +1081,7 @@
       setTimeout(()=> elCopyTranscriptBtn.textContent = "Copy transcript", 1200);
     }
   });
+
   elCopySummaryBtn.addEventListener("click", async ()=>{
     try{
       await navigator.clipboard.writeText(buildSessionSummary());
@@ -1202,32 +1093,6 @@
     }
   });
 
-  // Summary modal (optional)
-  function openSummary(){
-    elSummaryText.value = buildSessionSummary();
-    elModal.classList.add("open");
-    elModal.setAttribute("aria-hidden","false");
-  }
-  function closeSummary(){
-    elModal.classList.remove("open");
-    elModal.setAttribute("aria-hidden","true");
-  }
-  document.getElementById("openSummaryBtn").addEventListener("click", openSummary);
-  document.getElementById("closeModalBtn").addEventListener("click", closeSummary);
-  document.getElementById("summaryModal").addEventListener("click", (e)=>{ if(e.target.id==="summaryModal") closeSummary(); });
-  document.getElementById("copyBtn").addEventListener("click", async ()=>{
-    try{
-      await navigator.clipboard.writeText(elSummaryText.value);
-      const b = document.getElementById("copyBtn");
-      b.textContent = "Copied";
-      setTimeout(()=> b.textContent = "Copy session summary", 900);
-    } catch(e){
-      const b = document.getElementById("copyBtn");
-      b.textContent = "Copy failed";
-      setTimeout(()=> b.textContent = "Copy session summary", 1200);
-    }
-  });
-
   // Keyboard shortcuts for choice screens only
   window.addEventListener("keydown", (e)=>{
     if(!state.choicesLive) return;
@@ -1236,7 +1101,6 @@
     if(e.key === "3") pickChoice(2);
   });
 
-  // Restart
   elRestart.addEventListener("click", reset);
 
   // Helpers
@@ -1252,6 +1116,7 @@
   // Init
   updateMeters();
   renderStart();
+
 })();
 </script>
 </body>
